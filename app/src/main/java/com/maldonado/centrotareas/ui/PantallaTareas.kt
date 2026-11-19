@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.maldonado.centrotareas.model.CargaUi
 import com.maldonado.centrotareas.model.PrimosUi
 import com.maldonado.centrotareas.viewmodel.TareasViewModel
 import kotlin.math.roundToInt
@@ -166,9 +167,43 @@ private fun TarjetaPrimos(vm: TareasViewModel) {
 // ---------- Tarjeta 3: dos cargas (pasos 6 y 7) ----------
 @Composable
 private fun TarjetaCargas(vm: TareasViewModel) {
+    val carga by vm.carga.collectAsState()
+    val cargando = carga is CargaUi.Cargando
+
     Tarjeta("Dos cargas") {
-        // TODO Pasos 6 y 7: botones Una por una / A la vez, interruptor y resultado
-        Text("Pendiente (Pasos 6 y 7)", color = Color.Gray)
+        // Los botones se deshabilitan mientras carga (no hay segunda carga)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = { vm.cargarUnaPorUna() }, enabled = !cargando) {
+                Text("Una por una", fontWeight = FontWeight.Bold)
+            }
+            Button(onClick = { vm.cargarALaVez() }, enabled = !cargando) {
+                Text("A la vez", fontWeight = FontWeight.Bold)
+            }
+        }
+
+        when (val estado = carga) {
+            CargaUi.Inicial -> Text("Elige cómo cargar el perfil y los pedidos", color = Color.Gray)
+            CargaUi.Cargando -> Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Text("Cargando...")
+            }
+            is CargaUi.Exito -> RecuadroExito {
+                Text("Modo: ${estado.modo}", fontWeight = FontWeight.Bold)
+                Text("Perfil: ${estado.perfil}")
+                Text("Pedidos: ${estado.pedidos}")
+                Text("Tiempo: ${estado.milisegundos} ms")
+            }
+            is CargaUi.Error -> Text(estado.mensaje, color = MaterialTheme.colorScheme.error)
+        }
+
+        Text(
+            "«Una por una» tarda ≈ 5000 ms · «A la vez» ≈ 3000 ms",
+            color = Color.Gray,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 
