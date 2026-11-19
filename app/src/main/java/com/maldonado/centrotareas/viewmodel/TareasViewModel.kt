@@ -1,12 +1,20 @@
 package com.maldonado.centrotareas.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.maldonado.centrotareas.data.TareasRepository
 import com.maldonado.centrotareas.model.CargaUi
 import com.maldonado.centrotareas.model.PrimosUi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private const val TAG = "HILO"
 
 class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
 
@@ -14,16 +22,25 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
     private val _mensaje = MutableStateFlow("Listo")
     val mensaje: StateFlow<String> = _mensaje.asStateFlow()
 
-    // Paso 1: tarea larga hecha MAL, a propósito.
-    // Thread.sleep bloquea el hilo principal (main) durante 4 segundos:
-    // la pantalla no puede dibujarse ni responder a los toques.
-    fun tareaLargaMala() {
-        _mensaje.value = "Trabajando..."
-        Thread.sleep(4000)
-        _mensaje.value = "Terminó"
+    // Paso 2: la tarea larga corre en una corrutina.
+    // viewModelScope.launch arranca en el hilo principal (main),
+    // withContext(Dispatchers.Default) mueve la espera a un hilo de fondo
+    // y al terminar vuelve solo al hilo principal para actualizar el mensaje.
+    fun tareaLarga() {
+        viewModelScope.launch {
+            _mensaje.value = "Trabajando..."
+            Log.d(TAG, "Antes: ${Thread.currentThread().name}")
+
+            withContext(Dispatchers.Default) {
+                Log.d(TAG, "Dentro: ${Thread.currentThread().name}")
+                delay(4000) // suspende sin bloquear el hilo
+            }
+
+            Log.d(TAG, "Despues: ${Thread.currentThread().name}")
+            _mensaje.value = "Terminó"
+        }
     }
 
-    // TODO Paso 2: fun tareaLarga()
     // TODO Paso 3: progreso
     // TODO Paso 4: trabajo (Job), corriendo y cancelar()
 
