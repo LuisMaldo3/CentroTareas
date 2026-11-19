@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +21,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,9 +65,18 @@ fun PantallaTareas(vm: TareasViewModel) {
 @Composable
 private fun TarjetaProgreso(vm: TareasViewModel) {
     val mensaje by vm.mensaje.collectAsState()
+    // Contador de toques: es la "prueba de vida" de la pantalla.
+    // Si deja de sumar, el hilo principal está bloqueado.
+    var toques by rememberSaveable { mutableIntStateOf(0) }
+
     Tarjeta("Tarea con progreso") {
-        // TODO Pasos 1 a 4: botón Tócame, botones de la tarea y barra de progreso
-        Text(mensaje)
+        Button(onClick = { toques++ }) {
+            Text("Tócame: $toques", fontWeight = FontWeight.Bold)
+        }
+        Button(onClick = { vm.tareaLargaMala() }) {
+            Text("Tarea larga (MAL)", fontWeight = FontWeight.Bold)
+        }
+        Text(mensaje, color = Color.Gray)
     }
 }
 
