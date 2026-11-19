@@ -1,8 +1,12 @@
 package com.maldonado.centrotareas.data
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
@@ -18,6 +22,14 @@ class TareasRepositoryLocal : TareasRepository {
         if (simularError) throw IOException("Sin conexión")
         return listOf("Pedido 101", "Pedido 102", "Pedido 103")
     }
+
+    override fun tareaConProgreso(): Flow<Float> = flow {
+        for (i in 1..100) {
+            if (i == 1) Log.d("HILO", "Dentro: ${Thread.currentThread().name}")
+            delay(40)
+            emit(i / 100f)
+        }
+    }.flowOn(Dispatchers.Default)
 
     // Paso 5: cálculo pesado de CPU -> Dispatchers.Default (hilos para cálculo).
     // Así la función suspend no bloquea el hilo desde el que se llama.

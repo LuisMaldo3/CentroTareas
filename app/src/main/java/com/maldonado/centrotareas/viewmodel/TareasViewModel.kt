@@ -7,16 +7,13 @@ import com.maldonado.centrotareas.data.TareasRepository
 import com.maldonado.centrotareas.model.CargaUi
 import com.maldonado.centrotareas.model.PrimosUi
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private const val TAG = "HILO"
 
@@ -35,9 +32,6 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
     private val _corriendo = MutableStateFlow(false)
     val corriendo: StateFlow<Boolean> = _corriendo.asStateFlow()
 
-    // La tarea larga corre en una corrutina (viewModelScope.launch, hilo main).
-    // Cada vuelta espera 40 ms en un hilo de fondo (Dispatchers.Default)
-    // y al volver al hilo principal actualiza la barra: 100 x 40 ms ≈ 4 s.
     fun tareaLarga() {
         if (_corriendo.value) return // evita lanzar dos tareas a la vez
         _corriendo.value = true
@@ -48,12 +42,8 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                 _mensaje.value = "Trabajando..."
                 Log.d(TAG, "Antes: ${Thread.currentThread().name}")
 
-                for (i in 1..100) {
-                    withContext(Dispatchers.Default) {
-                        if (i == 1) Log.d(TAG, "Dentro: ${Thread.currentThread().name}")
-                        delay(40) // suspende sin bloquear y revisa la cancelación
-                    }
-                    _progreso.value = i / 100f
+                repo.tareaConProgreso().collect { progreso ->
+                    _progreso.value = progreso
                 }
 
                 Log.d(TAG, "Despues: ${Thread.currentThread().name}")
