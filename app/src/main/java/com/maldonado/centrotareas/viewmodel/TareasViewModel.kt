@@ -104,10 +104,18 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
     private val _carga = MutableStateFlow<CargaUi>(CargaUi.Inicial)
     val carga: StateFlow<CargaUi> = _carga.asStateFlow()
 
+    // Paso 7: interruptor "Simular error" (se pasa a repo.cargarPedidos)
+    private val _simularError = MutableStateFlow(false)
+    val simularError: StateFlow<Boolean> = _simularError.asStateFlow()
+
+    fun cambiarSimularError(valor: Boolean) {
+        _simularError.value = valor
+    }
+
     // Paso 6a: una por una -> primero el perfil (2 s) y DESPUÉS los pedidos (3 s) ≈ 5 s
     fun cargarUnaPorUna() = cargar("Una por una") {
         val perfil = repo.cargarPerfil()
-        val pedidos = repo.cargarPedidos(false)
+        val pedidos = repo.cargarPedidos(_simularError.value)
         Pair(perfil, pedidos)
     }
 
@@ -116,23 +124,30 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
     fun cargarALaVez() = cargar("A la vez") {
         coroutineScope {
             val perfil = async { repo.cargarPerfil() }
-            val pedidos = async { repo.cargarPedidos(false) }
+            val pedidos = async { repo.cargarPedidos(_simularError.value) }
             Pair(perfil.await(), pedidos.await())
         }
     }
 
-    // Lógica común: estado Cargando, medir el tiempo y publicar el Exito
+    // Paso 7: Reintentar vuelve a ejecutar la carga "A la vez"
+    fun reintentar() = cargarALaVez()
+
+    // Lógica común: estado Cargando, medir el tiempo y publicar Exito o Error
     private fun cargar(modo: String, bloque: suspend () -> Pair<String, List<String>>) {
         if (_carga.value is CargaUi.Cargando) return // no lanza una segunda carga
 
         viewModelScope.launch {
             _carga.value = CargaUi.Cargando
             val inicio = System.currentTimeMillis()
-            val (perfil, pedidos) = bloque()
-            val ms = System.currentTimeMillis() - inicio
-            _carga.value = CargaUi.Exito(modo, perfil, pedidos.size, ms)
+            try {
+                val (perfil, pedidos) = bloque()
+                val ms = System.currentTimeMillis() - inicio
+                _carga.value = CargaUi.Exito(modo, perfil, pedidos.size, ms)
+            } catch (e: Exception) {
+                // Primero se deja pasar la cancelación: no es un error de carga
+                if (e is CancellationException) throw e
+                _carga.value = CargaUi.Error("No se pudo cargar: ${e.message}")
+            }
         }
     }
-
-    // TODO Paso 7: simularError y manejo de errores
 }

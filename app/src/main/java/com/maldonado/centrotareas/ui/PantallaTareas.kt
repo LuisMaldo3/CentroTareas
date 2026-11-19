@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.maldonado.centrotareas.model.CargaUi
 import com.maldonado.centrotareas.model.PrimosUi
@@ -168,9 +170,23 @@ private fun TarjetaPrimos(vm: TareasViewModel) {
 @Composable
 private fun TarjetaCargas(vm: TareasViewModel) {
     val carga by vm.carga.collectAsState()
+    val simularError by vm.simularError.collectAsState()
     val cargando = carga is CargaUi.Cargando
 
     Tarjeta("Dos cargas") {
+        // Interruptor: con él activado, los pedidos fallan con "Sin conexión"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Switch(
+                checked = simularError,
+                onCheckedChange = { vm.cambiarSimularError(it) }
+            )
+            Text("Simular error")
+        }
+
         // Los botones se deshabilitan mientras carga (no hay segunda carga)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = { vm.cargarUnaPorUna() }, enabled = !cargando) {
@@ -196,7 +212,12 @@ private fun TarjetaCargas(vm: TareasViewModel) {
                 Text("Pedidos: ${estado.pedidos}")
                 Text("Tiempo: ${estado.milisegundos} ms")
             }
-            is CargaUi.Error -> Text(estado.mensaje, color = MaterialTheme.colorScheme.error)
+            is CargaUi.Error -> {
+                RecuadroError(estado.mensaje)
+                OutlinedButton(onClick = { vm.reintentar() }) {
+                    Text("Reintentar", fontWeight = FontWeight.Bold)
+                }
+            }
         }
 
         Text(
@@ -248,6 +269,23 @@ private fun RecuadroExito(contenido: @Composable ColumnScope.() -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
             content = contenido
+        )
+    }
+}
+
+// Recuadro de color de error para cuando una carga falla
+@Composable
+private fun RecuadroError(mensaje: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = mensaje,
+            modifier = Modifier.padding(12.dp),
+            textAlign = TextAlign.Center
         )
     }
 }
