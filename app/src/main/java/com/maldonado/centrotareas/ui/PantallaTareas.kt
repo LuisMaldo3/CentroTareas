@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.maldonado.centrotareas.viewmodel.TareasViewModel
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +67,7 @@ fun PantallaTareas(vm: TareasViewModel) {
 @Composable
 private fun TarjetaProgreso(vm: TareasViewModel) {
     val mensaje by vm.mensaje.collectAsState()
+    val progreso by vm.progreso.collectAsState()
     // Contador de toques: es la "prueba de vida" de la pantalla.
     // Si deja de sumar, el hilo principal está bloqueado.
     var toques by rememberSaveable { mutableIntStateOf(0) }
@@ -74,9 +77,14 @@ private fun TarjetaProgreso(vm: TareasViewModel) {
             Text("Tócame: $toques", fontWeight = FontWeight.Bold)
         }
         Button(onClick = { vm.tareaLarga() }) {
-            Text("Tarea larga", fontWeight = FontWeight.Bold)
+            Text("Iniciar", fontWeight = FontWeight.Bold)
         }
-        Text(mensaje, color = Color.Gray)
+        LinearProgressIndicator(
+            progress = { progreso },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text("${(progreso * 100).roundToInt()} %", color = Color.Gray)
+        Text(mensaje)
     }
 }
 
