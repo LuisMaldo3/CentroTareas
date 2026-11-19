@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -122,15 +123,39 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
     // Paso 7: Reintentar vuelve a ejecutar la carga "A la vez"
     fun reintentar() = cargarALaVez()
 
+    private suspend fun <T> conReintentos(
+        maxIntentos: Int = 3,
+        esperaInicialMs: Long = 500,
+        bloque: suspend () -> T
+    ): T {
+        var espera = esperaInicialMs
+        var intento = 1
+        while (true) {
+            try {
+                return bloque()
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                if (intento >= maxIntentos) {
+                    throw e
+                }
+                val siguiente = intento + 1
+                _carga.value = CargaUi.Reintentando(siguiente, maxIntentos, espera)
+                delay(espera)
+                espera *= 2
+                intento++
+            }
+        }
+    }
+
     // Lógica común: estado Cargando, medir el tiempo y publicar Exito o Error
     private fun cargar(modo: String, bloque: suspend () -> Pair<String, List<String>>) {
-        if (_carga.value is CargaUi.Cargando) return // no lanza una segunda carga
+        if (_carga.value is CargaUi.Cargando || _carga.value is CargaUi.Reintentando) return
 
         viewModelScope.launch {
             _carga.value = CargaUi.Cargando
             val inicio = System.currentTimeMillis()
             try {
-                val (perfil, pedidos) = bloque()
+                val (perfil, pedidos) = conReintentos { bloque() }
                 val ms = System.currentTimeMillis() - inicio
                 _carga.value = CargaUi.Exito(modo, perfil, pedidos.size, ms)
             } catch (e: Exception) {

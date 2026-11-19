@@ -171,7 +171,7 @@ private fun TarjetaPrimos(vm: TareasViewModel) {
 private fun TarjetaCargas(vm: TareasViewModel) {
     val carga by vm.carga.collectAsState()
     val simularError by vm.simularError.collectAsState()
-    val cargando = carga is CargaUi.Cargando
+    val cargando = carga is CargaUi.Cargando || carga is CargaUi.Reintentando
 
     Tarjeta("Dos cargas") {
         // Interruptor: con él activado, los pedidos fallan con "Sin conexión"
@@ -205,6 +205,13 @@ private fun TarjetaCargas(vm: TareasViewModel) {
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 Text("Cargando...")
+            }
+            is CargaUi.Reintentando -> Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Text("Reintentando (intento ${estado.intento} de ${estado.maximo})... espera ${estado.esperaMs} ms")
             }
             is CargaUi.Exito -> RecuadroExito {
                 Text("Modo: ${estado.modo}", fontWeight = FontWeight.Bold)
