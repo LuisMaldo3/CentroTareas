@@ -5,21 +5,22 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Azul del tema (barra superior, botones y títulos de las tarjetas)
 private val EsquemaCentroTareas = lightColorScheme(
-    primary = Color(0xFF1B6CA8),
+    primary = AzulPrincipal,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFD3E4F5),
-    onPrimaryContainer = Color(0xFF0B3A5E),
-    secondary = Color(0xFF4F6B85),
+    onPrimaryContainer = AzulMarino,
+    secondary = AzulSecundario,
     onSecondary = Color.White,
-    background = Color(0xFFFBF9FE),
-    onBackground = Color(0xFF1B1B1F),
+    background = AzulFondo,
+    onBackground = AzulTexto,
     surface = Color.White,
-    onSurface = Color(0xFF1B1B1F),
-    error = Color(0xFFB3261E),
-    errorContainer = Color(0xFFF9DEDC),
-    onErrorContainer = Color(0xFF8C1D18)
+    onSurface = AzulTexto,
+    surfaceVariant = Color(0xFFE8F1FC),
+    onSurfaceVariant = AzulSecundario,
+    error = ErrorTexto,
+    errorContainer = ErrorFondo,
+    onErrorContainer = ErrorTexto
 )
 
 @Composable
