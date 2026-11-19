@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -68,6 +70,7 @@ fun PantallaTareas(vm: TareasViewModel) {
 private fun TarjetaProgreso(vm: TareasViewModel) {
     val mensaje by vm.mensaje.collectAsState()
     val progreso by vm.progreso.collectAsState()
+    val corriendo by vm.corriendo.collectAsState()
     // Contador de toques: es la "prueba de vida" de la pantalla.
     // Si deja de sumar, el hilo principal está bloqueado.
     var toques by rememberSaveable { mutableIntStateOf(0) }
@@ -76,8 +79,15 @@ private fun TarjetaProgreso(vm: TareasViewModel) {
         Button(onClick = { toques++ }) {
             Text("Tócame: $toques", fontWeight = FontWeight.Bold)
         }
-        Button(onClick = { vm.tareaLarga() }) {
-            Text("Iniciar", fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Iniciar se deshabilita mientras corre (no hay doble inicio)
+            Button(onClick = { vm.tareaLarga() }, enabled = !corriendo) {
+                Text("Iniciar", fontWeight = FontWeight.Bold)
+            }
+            // Cancelar solo se habilita mientras corre
+            OutlinedButton(onClick = { vm.cancelar() }, enabled = corriendo) {
+                Text("Cancelar", fontWeight = FontWeight.Bold)
+            }
         }
         LinearProgressIndicator(
             progress = { progreso },
