@@ -8,6 +8,7 @@ import com.maldonado.centrotareas.model.CargaUi
 import com.maldonado.centrotareas.model.PrimosUi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -15,8 +16,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 private const val TAG = "HILO"
+private const val LIMITE_MS = 2000L
 
 class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
 
@@ -103,6 +106,13 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
         _simularError.value = valor
     }
 
+    private val _limiteActivo = MutableStateFlow(false)
+    val limiteActivo: StateFlow<Boolean> = _limiteActivo.asStateFlow()
+
+    fun cambiarLimite(valor: Boolean) {
+        _limiteActivo.value = valor
+    }
+
     // Paso 6a: una por una -> primero el perfil (2 s) y DESPUÉS los pedidos (3 s) ≈ 5 s
     fun cargarUnaPorUna() = cargar("Una por una") {
         val perfil = repo.cargarPerfil()
@@ -155,9 +165,17 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
             _carga.value = CargaUi.Cargando
             val inicio = System.currentTimeMillis()
             try {
-                val (perfil, pedidos) = conReintentos { bloque() }
+                val (perfil, pedidos) = if (_limiteActivo.value) {
+                    withTimeout(LIMITE_MS) {
+                        conReintentos { bloque() }
+                    }
+                } else {
+                    conReintentos { bloque() }
+                }
                 val ms = System.currentTimeMillis() - inicio
                 _carga.value = CargaUi.Exito(modo, perfil, pedidos.size, ms)
+            } catch (e: TimeoutCancellationException) {
+                _carga.value = CargaUi.Error("Tardó demasiado: se superó el límite de 2 s")
             } catch (e: Exception) {
                 // Primero se deja pasar la cancelación: no es un error de carga
                 if (e is CancellationException) throw e

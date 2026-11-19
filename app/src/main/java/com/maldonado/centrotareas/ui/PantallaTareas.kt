@@ -171,6 +171,7 @@ private fun TarjetaPrimos(vm: TareasViewModel) {
 private fun TarjetaCargas(vm: TareasViewModel) {
     val carga by vm.carga.collectAsState()
     val simularError by vm.simularError.collectAsState()
+    val limiteActivo by vm.limiteActivo.collectAsState()
     val cargando = carga is CargaUi.Cargando || carga is CargaUi.Reintentando
 
     Tarjeta("Dos cargas") {
@@ -185,6 +186,19 @@ private fun TarjetaCargas(vm: TareasViewModel) {
                 onCheckedChange = { vm.cambiarSimularError(it) }
             )
             Text("Simular error")
+        }
+
+        // Interruptor: Límite de 2 s
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Switch(
+                checked = limiteActivo,
+                onCheckedChange = { vm.cambiarLimite(it) }
+            )
+            Text("Límite de 2 s")
         }
 
         // Los botones se deshabilitan mientras carga (no hay segunda carga)
