@@ -73,6 +73,7 @@ fun PantallaTareas(vm: TareasViewModel) {
             TarjetaProgreso(vm)
             TarjetaPrimos(vm)
             TarjetaCargas(vm)
+            TarjetaComparacion(vm)
         }
     }
 }
@@ -246,6 +247,82 @@ private fun TarjetaCargas(vm: TareasViewModel) {
             color = Color.Gray,
             style = MaterialTheme.typography.bodySmall
         )
+    }
+}
+
+// ---------- Tarjeta 4: comparación de tiempos (Etapa 4) ----------
+@Composable
+private fun TarjetaComparacion(vm: TareasViewModel) {
+    val tiempos by vm.tiempos.collectAsState()
+    val resumen by vm.resumen.collectAsState()
+
+    Tarjeta("Comparación de tiempos") {
+        if (tiempos.isEmpty()) {
+            Text("Aún no hay tiempos. Prueba Una por una y A la vez.", color = Color.Gray)
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Cabecera de la tabla
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("N.º", fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.5f))
+                    Text("Modo", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.5f))
+                    Text("Tiempo (ms)", fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+                }
+
+                tiempos.forEachIndexed { index, registro ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("${index + 1}", modifier = Modifier.weight(0.5f))
+                        Text(registro.modo, modifier = Modifier.weight(1.5f))
+                        Text("${registro.milisegundos}", textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+                    }
+                }
+
+                // Resumen
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (resumen.promedioUnaPorUna > 0.0) {
+                            Text("Promedio Una por una: ${resumen.promedioUnaPorUna.roundToInt()} ms", style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (resumen.promedioALaVez > 0.0) {
+                            Text("Promedio A la vez: ${resumen.promedioALaVez.roundToInt()} ms", style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (resumen.vecesMasRapido > 0.0) {
+                            Text(
+                                "A la vez fue ${String.format(java.util.Locale.US, "%.1f", resumen.vecesMasRapido)} veces más rápido",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+
+            OutlinedButton(onClick = { vm.limpiarTiempos() }) {
+                Text("Limpiar", fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 

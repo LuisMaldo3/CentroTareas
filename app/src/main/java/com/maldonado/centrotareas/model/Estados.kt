@@ -19,3 +19,11 @@ sealed interface CargaUi {
     ) : CargaUi
     data class Error(val mensaje: String) : CargaUi
 }
+
+data class RegistroTiempo(val modo: String, val milisegundos: Long)
+
+data class ResumenTiempos(
+    val promedioUnaPorUna: Double = 0.0,
+    val promedioALaVez: Double = 0.0,
+    val vecesMasRapido: Double = 0.0
+)

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.maldonado.centrotareas.data.TareasRepository
 import com.maldonado.centrotareas.model.CargaUi
 import com.maldonado.centrotareas.model.PrimosUi
+import com.maldonado.centrotareas.model.RegistroTiempo
+import com.maldonado.centrotareas.model.ResumenTiempos
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -13,8 +15,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
@@ -113,6 +118,27 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
         _limiteActivo.value = valor
     }
 
+    // ----- Comparación de tiempos (Etapa 4)
+    private val _tiempos = MutableStateFlow<List<RegistroTiempo>>(emptyList())
+    val tiempos: StateFlow<List<RegistroTiempo>> = _tiempos.asStateFlow()
+
+    val resumen: StateFlow<ResumenTiempos> = _tiempos.map { lista ->
+        val unaPorUna = lista.filter { it.modo == "Una por una" }
+        val aLaVez = lista.filter { it.modo == "A la vez" }
+        val promUna = if (unaPorUna.isNotEmpty()) unaPorUna.map { it.milisegundos }.average() else 0.0
+        val promALaVez = if (aLaVez.isNotEmpty()) aLaVez.map { it.milisegundos }.average() else 0.0
+        val veces = if (promALaVez > 0.0) promUna / promALaVez else 0.0
+        ResumenTiempos(promUna, promALaVez, veces)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ResumenTiempos()
+    )
+
+    fun limpiarTiempos() {
+        _tiempos.value = emptyList()
+    }
+
     // Paso 6a: una por una -> primero el perfil (2 s) y DESPUÉS los pedidos (3 s) ≈ 5 s
     fun cargarUnaPorUna() = cargar("Una por una") {
         val perfil = repo.cargarPerfil()
@@ -174,6 +200,7 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                 }
                 val ms = System.currentTimeMillis() - inicio
                 _carga.value = CargaUi.Exito(modo, perfil, pedidos.size, ms)
+                _tiempos.value = (_tiempos.value + RegistroTiempo(modo, ms)).takeLast(10)
             } catch (e: TimeoutCancellationException) {
                 _carga.value = CargaUi.Error("Tardó demasiado: se superó el límite de 2 s")
             } catch (e: Exception) {
